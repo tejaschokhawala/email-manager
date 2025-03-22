@@ -1,22 +1,38 @@
-<script setup lang="ts">
-import HelloWorld from "./components/HelloWorld.vue";
-</script>
-
 <template>
-  <HelloWorld msg="Vite + Vue" />
+  <div class="app-container">
+    <EmailManager />
+  </div>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<script lang="ts">
+import { defineComponent } from 'vue';
+import EmailManager from './components/EmailManager.vue';
+
+export default defineComponent({
+  name: 'App',
+  components: {
+    EmailManager
+  }
+});
+</script>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f5f5f5;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.app-container {
+  padding: 24px;
+  min-height: 100vh;
+  display: flex;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px 8px;
+  }
 }
 </style>
