@@ -12,7 +12,7 @@ A Vue.js component that allows managing email addresses through an intuitive int
 - Remove individual or domain-grouped recipients
 
 ## 🔍 Preview
-![Email Recipients Manager Preview](./public/UI.png)
+![Email Recipients Manager Preview](./public/DEMO.png)
 
 ## 🚀 Tech Stack
 - Vue.js
