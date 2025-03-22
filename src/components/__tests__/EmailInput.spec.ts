@@ -39,8 +39,7 @@ describe("EmailInput.vue", () => {
           "a-input": {
             template:
               '<div class="input"><input :value="value" @input="$emit(\'update:value\', $event.target.value)" @keypress.enter="$emit(\'pressEnter\')" /><slot name="prefix"></slot></div>',
-            props: ["value", "placeholder", "allow-clear"],
-            emits: ["update:value", "pressEnter", "input"],
+            props: ["placeholder", "value"],
           },
           UserOutlined: true,
           "a-button": {
@@ -62,13 +61,11 @@ describe("EmailInput.vue", () => {
   it("emits add-email event when Enter is pressed with valid email", async () => {
     const input = wrapper.find("input");
     await input.setValue("newuser@domain.com");
-
-    await input.trigger("input");
-
-    await input.trigger("keypress", { key: "Enter" });
-
     await wrapper.vm.$nextTick();
 
+    await input.trigger("keydown.enter");
+
+    await wrapper.vm.$nextTick();
     expect(wrapper.emitted("add-email")).toBeTruthy();
     expect(wrapper.emitted("add-email")[0]).toEqual(["newuser@domain.com"]);
   });
@@ -91,12 +88,19 @@ describe("EmailInput.vue", () => {
     mockToast.error.mockReset();
 
     await input.setValue("invalid-email");
-    await input.trigger("input");
-    await input.trigger("keypress", { key: "Enter" });
+    await wrapper.vm.$nextTick();
 
+    await input.trigger("input");
+    await wrapper.vm.$nextTick();
+
+    await input.trigger("keydown.enter");
+    await wrapper.vm.$nextTick();
+
+    expect(mockToast.error).toHaveBeenCalledTimes(1);
     expect(mockToast.error).toHaveBeenCalledWith(
       "Please enter a valid email address"
     );
+
     expect(wrapper.emitted("add-email")).toBeFalsy();
   });
 
@@ -124,10 +128,15 @@ describe("EmailInput.vue", () => {
 
   it("handles adding a new email that doesn't exist in recipients", async () => {
     const input = wrapper.find("input");
-    await input.setValue("brand.new@email.com");
-    await input.trigger("input");
-    await input.trigger("keypress", { key: "Enter" });
 
+    await input.setValue("brand.new@email.com");
+    await wrapper.vm.$nextTick();
+
+    await input.trigger("input");
+    await wrapper.vm.$nextTick();
+
+    await input.trigger("keydown.enter");
+    await wrapper.vm.$nextTick();
     expect(wrapper.emitted("add-email")).toBeTruthy();
     expect(wrapper.emitted("add-email")[0][0]).toBe("brand.new@email.com");
   });

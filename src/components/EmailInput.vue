@@ -1,27 +1,31 @@
 <template>
   <div class="email-input-container">
     <a-auto-complete
+      ref="emailAutoComplete"
       v-model:value="inputValue"
       :options="filteredOptions"
       class="email-autocomplete"
       @select="handleSelect"
       :open="filteredOptions.length > 0"
+      @keydown.enter="handleInputEnter"
+      @change="handleInputChange"
+      allow-clear
+      autofocus
     >
-      <a-input
-        placeholder="Enter email or company name"
-        v-model:value="inputValue"
-        @input="handleInputChange"
-        @pressEnter="handleInputEnter"
-        allow-clear
-      >
-        <template #prefix>
-          <UserOutlined />
-        </template>
-      </a-input>
+      <template #default>
+        <a-input
+          v-model:value="inputValue"
+          placeholder="Enter email or company name"
+        >
+          <template #prefix>
+            <UserOutlined />
+          </template>
+        </a-input>
+      </template>
     </a-auto-complete>
+
     <a-button
       type="primary"
-      :disabled="!inputValue || !isValidInput"
       @click="handleAddEmail"
     >
       Add
@@ -52,6 +56,7 @@ export default defineComponent({
     const toast = useToast();
     const inputValue = ref("");
     const isValidInput = ref(false);
+    const emailInput = ref<HTMLElement | null>(null); // Add ref for input
 
     const domains = computed(() => {
       const domainSet = new Set<string>();
@@ -84,46 +89,87 @@ export default defineComponent({
       isValidInput.value = isValidEmail(inputValue.value);
     };
 
+    const processEmail = (email: string) => {
+      const exists = props.recipients.some((r) => r.email === email);
+      if (exists) {
+        const recipient = props.recipients.find((r) => r.email === email);
+        if (recipient && !recipient.isSelected) {
+          emit("select-recipient", [recipient]);
+          toast.success(`${email} has been added`);
+        }
+      } else {
+        emit("add-email", email);
+        toast.success(`${email} has been added`);
+      }
+      return true;
+    };
+
+    const processDomain = (domain: string) => {
+      const domainRecipients = props.recipients.filter(
+        (r) => getDomain(r.email) === domain && !r.isSelected
+      );
+
+      if (domainRecipients.length > 0) {
+        emit("select-recipient", domainRecipients);
+        toast.success(`All emails from ${domain} have been added`);
+        return true;
+      }
+      return false;
+    };
+
     const handleInputEnter = () => {
-      handleAddEmail();
+      const value = inputValue.value;
+
+      if (!value.trim()) {
+        return;
+      }
+
+      if (value.startsWith("@")) {
+        if (processDomain(value.substring(1))) {
+          inputValue.value = "";
+          return;
+        }
+      }
+
+      const exactMatch = props.recipients.find(
+        (r) => r.email.toLowerCase() === value.toLowerCase() && !r.isSelected
+      );
+
+      if (exactMatch) {
+        processEmail(exactMatch.email);
+        inputValue.value = "";
+        return;
+      }
+
+      if (isValidEmail(value)) {
+        processEmail(value);
+        inputValue.value = "";
+        return;
+      }
+
+      if (filteredOptions.value.length > 0) {
+        handleSelect(filteredOptions.value[0].value);
+        return;
+      }
+
+      toast.error("Please enter a valid email address");
     };
 
     const handleSelect = (value: string) => {
-      if (!filteredOptions) return;
       if (value.startsWith("@")) {
-        const domain = value.substring(1);
-        const domainRecipients = props.recipients.filter(
-          (r) => getDomain(r.email) === domain && !r.isSelected
-        );
-
-        if (domainRecipients.length > 0) {
-          emit("select-recipient", domainRecipients);
-          toast.success(`All emails from ${domain} have been added`);
-        }
+        processDomain(value.substring(1));
       } else {
-        const recipient = props.recipients.find((r) => r.email === value);
-        if (recipient && !recipient.isSelected) {
-          emit("select-recipient", [recipient]);
-          toast.success(`${value} has been added`);
-        }
+        processEmail(value);
       }
       inputValue.value = "";
     };
 
     const handleAddEmail = () => {
       if (!isValidEmail(inputValue.value)) {
-        toast.error("Please enter a valid email address");
-        return;
-      }
-
-      const exists = props.recipients.some((r) => r.email === inputValue.value);
-      if (exists) {
-        handleSelect(inputValue.value);
-      } else {
-        emit("add-email", inputValue.value);
-        toast.success(`${inputValue.value} has been added`);
-        inputValue.value = "";
-      }
+        return toast.error("Please enter a valid email address");
+      };
+      processEmail(inputValue.value);
+      inputValue.value = "";
     };
 
     return {
